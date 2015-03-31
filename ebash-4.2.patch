@@ -1,0 +1,173 @@
+diff -rBbwup bash-4.2/parse.y ebash-4.2/parse.y
+--- bash-4.2/parse.y	2011-01-03 02:48:11.000000000 +0600
++++ ebash-4.2/parse.y	2014-09-06 17:10:06.000000000 +0600
+@@ -334,7 +334,7 @@ static REDIRECTEE redir;
+    in the case that they are preceded by a list_terminator.  Members
+    of the second group are for [[...]] commands.  Members of the
+    third group are recognized only under special circumstances. */
+-%token IF THEN ELSE ELIF FI CASE ESAC FOR SELECT WHILE UNTIL DO DONE FUNCTION COPROC
++%token IF THEN ELSE ELIF FI CASE ESAC FOR SELECT WHILE UNTIL FUNCTION COPROC
+ %token COND_START COND_END COND_ERROR
+ %token IN BANG TIME TIMEOPT TIMEIGN
+ 
+@@ -755,9 +755,9 @@ shell_command:	for_command
+ 			{ $$ = $1; }
+ 	|	case_command
+ 			{ $$ = $1; }
+- 	|	WHILE compound_list DO compound_list DONE
++ 	|	WHILE compound_list THEN compound_list FI
+ 			{ $$ = make_while_command ($2, $4); }
+-	|	UNTIL compound_list DO compound_list DONE
++	|	UNTIL compound_list THEN compound_list FI
+ 			{ $$ = make_until_command ($2, $4); }
+ 	|	select_command
+ 			{ $$ = $1; }
+@@ -775,7 +775,7 @@ shell_command:	for_command
+ 			{ $$ = $1; }
+ 	;
+ 
+-for_command:	FOR WORD newline_list DO compound_list DONE
++for_command:	FOR WORD newline_list THEN compound_list FI
+ 			{
+ 			  $$ = make_for_command ($2, add_string_to_list ("\"$@\"", (WORD_LIST *)NULL), $5, word_lineno[word_top]);
+ 			  if (word_top > 0) word_top--;
+@@ -785,7 +785,7 @@ for_command:	FOR WORD newline_list DO co
+ 			  $$ = make_for_command ($2, add_string_to_list ("\"$@\"", (WORD_LIST *)NULL), $5, word_lineno[word_top]);
+ 			  if (word_top > 0) word_top--;
+ 			}
+-	|	FOR WORD ';' newline_list DO compound_list DONE
++	|	FOR WORD ';' newline_list THEN compound_list FI
+ 			{
+ 			  $$ = make_for_command ($2, add_string_to_list ("\"$@\"", (WORD_LIST *)NULL), $6, word_lineno[word_top]);
+ 			  if (word_top > 0) word_top--;
+@@ -795,7 +795,7 @@ for_command:	FOR WORD newline_list DO co
+ 			  $$ = make_for_command ($2, add_string_to_list ("\"$@\"", (WORD_LIST *)NULL), $6, word_lineno[word_top]);
+ 			  if (word_top > 0) word_top--;
+ 			}
+-	|	FOR WORD newline_list IN word_list list_terminator newline_list DO compound_list DONE
++	|	FOR WORD newline_list IN word_list list_terminator newline_list THEN compound_list FI
+ 			{
+ 			  $$ = make_for_command ($2, REVERSE_LIST ($5, WORD_LIST *), $9, word_lineno[word_top]);
+ 			  if (word_top > 0) word_top--;
+@@ -805,7 +805,7 @@ for_command:	FOR WORD newline_list DO co
+ 			  $$ = make_for_command ($2, REVERSE_LIST ($5, WORD_LIST *), $9, word_lineno[word_top]);
+ 			  if (word_top > 0) word_top--;
+ 			}
+-	|	FOR WORD newline_list IN list_terminator newline_list DO compound_list DONE
++	|	FOR WORD newline_list IN list_terminator newline_list THEN compound_list FI
+ 			{
+ 			  $$ = make_for_command ($2, (WORD_LIST *)NULL, $8, word_lineno[word_top]);
+ 			  if (word_top > 0) word_top--;
+@@ -817,7 +817,7 @@ for_command:	FOR WORD newline_list DO co
+ 			}
+ 	;
+ 
+-arith_for_command:	FOR ARITH_FOR_EXPRS list_terminator newline_list DO compound_list DONE
++arith_for_command:	FOR ARITH_FOR_EXPRS list_terminator newline_list THEN compound_list FI
+ 				{
+ 				  $$ = make_arith_for_command ($2, $6, arith_for_lineno);
+ 				  if (word_top > 0) word_top--;
+@@ -827,7 +827,7 @@ arith_for_command:	FOR ARITH_FOR_EXPRS l
+ 				  $$ = make_arith_for_command ($2, $6, arith_for_lineno);
+ 				  if (word_top > 0) word_top--;
+ 				}
+-	|		FOR ARITH_FOR_EXPRS DO compound_list DONE
++	|		FOR ARITH_FOR_EXPRS THEN compound_list FI
+ 				{
+ 				  $$ = make_arith_for_command ($2, $4, arith_for_lineno);
+ 				  if (word_top > 0) word_top--;
+@@ -839,7 +839,7 @@ arith_for_command:	FOR ARITH_FOR_EXPRS l
+ 				}
+ 	;
+ 
+-select_command:	SELECT WORD newline_list DO list DONE
++select_command:	SELECT WORD newline_list THEN list FI
+ 			{
+ 			  $$ = make_select_command ($2, add_string_to_list ("\"$@\"", (WORD_LIST *)NULL), $5, word_lineno[word_top]);
+ 			  if (word_top > 0) word_top--;
+@@ -849,7 +849,7 @@ select_command:	SELECT WORD newline_list
+ 			  $$ = make_select_command ($2, add_string_to_list ("\"$@\"", (WORD_LIST *)NULL), $5, word_lineno[word_top]);
+ 			  if (word_top > 0) word_top--;
+ 			}
+-	|	SELECT WORD ';' newline_list DO list DONE
++	|	SELECT WORD ';' newline_list THEN list FI
+ 			{
+ 			  $$ = make_select_command ($2, add_string_to_list ("\"$@\"", (WORD_LIST *)NULL), $6, word_lineno[word_top]);
+ 			  if (word_top > 0) word_top--;
+@@ -859,7 +859,7 @@ select_command:	SELECT WORD newline_list
+ 			  $$ = make_select_command ($2, add_string_to_list ("\"$@\"", (WORD_LIST *)NULL), $6, word_lineno[word_top]);
+ 			  if (word_top > 0) word_top--;
+ 			}
+-	|	SELECT WORD newline_list IN word_list list_terminator newline_list DO list DONE
++	|	SELECT WORD newline_list IN word_list list_terminator newline_list THEN list FI
+ 			{
+ 			  $$ = make_select_command ($2, REVERSE_LIST ($5, WORD_LIST *), $9, word_lineno[word_top]);
+ 			  if (word_top > 0) word_top--;
+@@ -2038,9 +2038,11 @@ read_secondary_line (remove_quoted_newli
+    command. */
+ STRING_INT_ALIST word_token_alist[] = {
+   { "if", IF },
++  { "{", THEN },
+   { "then", THEN },
+   { "else", ELSE },
+   { "elif", ELIF },
++  { "}", FI },
+   { "fi", FI },
+   { "case", CASE },
+   { "esac", ESAC },
+@@ -2049,9 +2051,9 @@ STRING_INT_ALIST word_token_alist[] = {
+   { "select", SELECT },
+ #endif
+   { "while", WHILE },
++  { "do", THEN },
++  { "done", FI },
+   { "until", UNTIL },
+-  { "do", DO },
+-  { "done", DONE },
+   { "in", IN },
+   { "function", FUNCTION },
+ #if defined (COMMAND_TIMING)
+@@ -2683,7 +2685,6 @@ time_command_acceptable ()
+     case AND_AND:
+     case OR_OR:
+     case '&':
+-    case DO:
+     case THEN:
+     case ELSE:
+     case '{':		/* } */
+@@ -2754,7 +2755,7 @@ special_case_tokens (tokstr)
+       (token_before_that == FOR) &&
+ #endif
+       (tokstr[0] == 'd' && tokstr[1] == 'o' && tokstr[2] == '\0'))
+-    return (DO);
++    return (THEN);
+ 
+   /* Ditto for ESAC in the CASE case.
+      Specifically, this handles "case word in esac", which is a legal
+@@ -2787,7 +2788,7 @@ special_case_tokens (tokstr)
+   /* We allow a `do' after a for ((...)) without an intervening
+      list_terminator */
+   if (last_read_token == ARITH_FOR_EXPRS && tokstr[0] == 'd' && tokstr[1] == 'o' && !tokstr[2])
+-    return (DO);
++    return (THEN);
+   if (last_read_token == ARITH_FOR_EXPRS && tokstr[0] == '{' && tokstr[1] == '\0')	/* } */
+     {
+       open_brace_count++;
+@@ -4778,8 +4779,6 @@ reserved_word_acceptable (toksym)
+     case AND_AND:
+     case BANG:
+     case BAR_AND:
+-    case DO:
+-    case DONE:
+     case ELIF:
+     case ELSE:
+     case ESAC:
+@@ -4857,7 +4856,7 @@ reset_readline_prompt ()
+    newline separator for such tokens is replaced with a space. */
+ static const int no_semi_successors[] = {
+   '\n', '{', '(', ')', ';', '&', '|',
+-  CASE, DO, ELSE, IF, SEMI_SEMI, SEMI_AND, SEMI_SEMI_AND, THEN, UNTIL,
++  CASE, ELSE, IF, SEMI_SEMI, SEMI_AND, SEMI_SEMI_AND, THEN, UNTIL,
+   WHILE, AND_AND, OR_OR, IN,
+   0
+ };
